@@ -1,6 +1,6 @@
 name = "RailToolKit"
 uuid = "38c93756-510a-4e6b-882b-a93ae55834d0"
-authors = ["Martin Scheidt <142348+kaat0@users.noreply.github.com> and contributors"]
+authors = ["Martin Scheidt and contributors"]
 version = "1.0.0-DEV"
 
 [compat]
