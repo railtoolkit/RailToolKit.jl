@@ -1,9 +1,15 @@
 name = "RailToolKit"
 uuid = "38c93756-510a-4e6b-882b-a93ae55834d0"
 authors = ["Martin Scheidt and contributors"]
-version = "1.0.0-DEV"
+version = "1.0.0"
+
+[deps]
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+TrainRuns = "e4541106-d44c-4e00-b50b-ecdf479fcf92"
 
 [compat]
+Reexport = "1"
+TrainRuns = "1.0.4"
 julia = "1.10"
 
 [extras]
