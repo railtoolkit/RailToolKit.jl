@@ -51,10 +51,11 @@ If sources conflict on *harness scope*, prefer this file. On *use-case form*, pr
 
 **Do**
 
-- Start from an active or draft `UC-*` and stabilize assets + `test.jl`
-- Depend inward on packages listed by active cases; pin compat in `Project.toml`
+- Start from an active or draft `UC-*`; keep intent clear, then stabilize the binding (`assets/` + `test.jl`)
+- Depend inward on packages listed by **active** cases; pin compat in `Project.toml`
 - List every result-affecting artifact in **Artifacts**; state decidable **Expected outcomes** (`OUT-n`)
-- Use **Scope** (mandatory out-of-scope) and **Verification** (`TEST-n` + `test.jl`)
+- Use **Scope** (mandatory out-of-scope) and **Verification** (`TEST-n` + `test.jl` when active)
+- Write Goal / main scenario in domain language; name concrete APIs only when binding for `status: active`
 - Bump case **`version`** and record **`lineage`** when updating, splitting, or merging workflows
 - Add `template/versions/vN.md` and migrate all active cases when you need a formal template break
 - Read authoritative sources before adding files
@@ -107,13 +108,14 @@ julia --project=. -e 'include("usecases/UC-NNN-short-name/test.jl")'
 Required sections and frontmatter: see the current [`TEMPLATE.md`](usecases/template/TEMPLATE.md)
 and [`CHANGELOG.md`](CHANGELOG.md#use-case-template).
 
-- **`status: draft`** — propose workflow before packages or tests exist; CI validates structure only
-- **`status: active`** — requires `test.jl`, decidable `OUT-n`, matching `template_version`, passing CI
+- **`status: draft`** — propose **implementation-agnostic** intent; CI validates structure only
+- **`status: active`** — requires a concrete **implementation binding** (`packages:`, assets, APIs, `test.jl`), decidable `OUT-n`, matching `template_version`, passing CI
 - **`version`** — workflow revision for the stable `id`; use **`lineage`** for update/split/merge (refs `UC-NNN@M`)
-- `packages:` may include non-Julia data contracts (`role: data`); only Julia calculate/import/… packages belong in `Project.toml`
+- **`related:`** / **`builds_on:`** — optional catalogue links (refs `UC-NNN@M`); navigation and binding order only — **not** CI gates; each active case stays self-contained
+- `packages:` may be candidates while draft; only Julia calculate/import/… packages for **active** cases belong in `Project.toml`
 - Active cases: no instructional HTML comments; `template_version` matches latest `template/versions/vN.md`
 - Prefer regression constants in `test.jl` with an explicit tolerance; smoke-only only while `status: draft`
-- ID prefixes: `ACT-n`, `PRE-n`, `STEP-n`, `OUT-n`, `EXC-n`, `EX-n`, `TEST-n`, `Q-n`
+- ID prefixes: `ACT-n`, `PRE-n`, `STEP-n`, `A-n`, `OUT-n`, `EXC-n`, `EX-n`, `TEST-n`, `Q-n`
 
 Full lifecycle and versioning: [`README.md`](README.md#use-case-lifecycle-draft--active).
 

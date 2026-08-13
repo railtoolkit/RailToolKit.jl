@@ -28,13 +28,27 @@ cases when you bump `template/versions/vN.md`.
 
 ### v1 — 2026-08-12 (current form)
 
-Human + Julia reference form for RailToolKit integration cases. Inspired by
-testability-oriented use-case writing (actors, scope, decidable outcomes, worked
-examples) without import/quality machinery.
+Human + Julia reference form for RailToolKit integration cases. Revised in place
+while the harness is WIP.
 
-**Required frontmatter:** `id`, `version` (positive integer — workflow revision for
-this `id`), `title`, `template_version`, `status`, `owner`,
-`created`, `updated`, `packages`, `summary`.
+**Policy:** use cases are **intent first, implementation when active**.
+
+- Draft narrative stays **implementation-agnostic** (domain goals, actors as roles,
+  decidable outcomes).
+- **`status: active`** requires an **implementation binding**: concrete `packages:`,
+  `assets/`, named entrypoints, and `test.jl`.
+
+**Required frontmatter:** `id`, `title`, `template_version`, `version`, `status`,
+`owner`, `created`, `updated`, `packages`, `summary`.
+
+**Optional:** `lineage` (`supersedes`, `split_from`, `merged_from`, `superseded_by`)
+with refs `UC-NNN@M`. CI enforces unique `(id, version)` pairs, at most one
+**`status: active`** directory per `id`, and resolvable lineage refs.
+
+**Optional (navigation only):** `related` and `builds_on` — lists of `UC-NNN@M`
+refs for peer cases and intent dependencies. Invalid format is an error; missing
+refs is a **warning only**. Does **not** gate activation or CI ordering; each
+active case must remain self-contained (`assets/` + `test.jl`).
 
 Extra frontmatter keys are allowed (e.g. legacy `layers` on cases not yet
 migrated). Do not add `layers` to new cases — the railway layer model is a
@@ -44,26 +58,16 @@ future use case, not a catalogue cross-cut.
 scenario, Artifacts, Expected outcomes, Exceptions, Worked example, Verification,
 Assumptions & limits, Reproducibility, Open questions, References.
 
-**ID conventions (within a case):** `ACT-n`, `PRE-n`, `STEP-n`, `OUT-n`,
+**ID conventions (within a case):** `ACT-n`, `PRE-n`, `STEP-n`, `A-n`, `OUT-n`,
 `EXC-n`, `EX-n`, `TEST-n`, `Q-n`.
 
 **Active gates:** `status: active` requires `test.jl`, matching
 `template_version`, no instructional HTML comments, and at least one decidable
 `OUT-n` covered by verification (see case narrative + `test.jl`).
 
-**Optional frontmatter:** `lineage` mapping:
-
-- `supersedes: [UC-NNN@M, …]` — this version replaces those (update)
-- `split_from: UC-NNN@M` — this case was split from that version
-- `merged_from: [UC-NNN@M, …]` — this case merges those versions
-- `superseded_by: UC-NNN@M` — replacement when `status: deprecated`
-
-Refs use **`UC-NNN@M`** (`id@version`). CI enforces unique `(id, version)` pairs,
-at most one **`status: active`** directory per `id`, and resolvable lineage refs.
-
 #### Migration
 
-*n/a — v1 is the current working form.*
+*n/a — v1 is the current working form; revise in place while WIP.*
 
 ---
 

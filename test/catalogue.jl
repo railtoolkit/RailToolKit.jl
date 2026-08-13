@@ -17,6 +17,7 @@ const REQUIRED_FRONTMATTER = (
 
 const LINEAGE_LIST_KEYS = ("supersedes", "merged_from")
 const LINEAGE_SCALAR_KEYS = ("split_from", "superseded_by")
+const RELATION_LIST_KEYS = ("related", "builds_on")
 const USECASE_REF = r"^(UC-\d+)@(\d+)$"
 
 const REQUIRED_SECTION_TITLES = (
@@ -184,6 +185,67 @@ function validate_lineage_frontmatter!(errors, warnings, meta::AbstractDict, id,
     end
 end
 
+function validate_relation_frontmatter!(errors, warnings, meta::AbstractDict, id, version)
+    self_ref = id isa AbstractString && version isa Int ? usecase_ref(id, version) : nothing
+
+    for key in RELATION_LIST_KEYS
+        haskey(meta, key) || continue
+        val = meta[key]
+        val === nothing && continue
+        if !(val isa AbstractVector)
+            push!(errors, "`$key` must be a list of UC-NNN@M refs")
+            continue
+        end
+        for item in val
+            item isa AbstractString || begin
+                push!(errors, "$key entries must be strings (UC-NNN@M)")
+                continue
+            end
+            parse_usecase_ref(item) === nothing &&
+                push!(errors, "invalid ref `$item` in $key (expected UC-NNN@M)")
+            self_ref !== nothing && item == self_ref &&
+                push!(errors, "$key must not reference this case itself (`$item`)")
+        end
+    end
+end
+
+function cross_validate_usecase_relations!(checks::Dict{String, UseCaseCheck}, dirs)
+    registry = Dict{Tuple{String, Int}, String}()
+    for dir in dirs
+        case_name = basename(dir)
+        meta = load_usecase_meta(dir)
+        meta === nothing && continue
+        id = get(meta, "id", nothing)
+        version = usecase_version_int(meta)
+        id isa AbstractString || continue
+        version === nothing && continue
+        registry[(id, version)] = case_name
+    end
+
+    for dir in dirs
+        case_name = basename(dir)
+        meta = load_usecase_meta(dir)
+        meta === nothing && continue
+
+        refs = String[]
+        for key in RELATION_LIST_KEYS
+            haskey(meta, key) || continue
+            val = meta[key]
+            val isa AbstractVector || continue
+            append!(refs, filter(x -> x isa AbstractString, val))
+        end
+
+        for ref in refs
+            parsed = parse_usecase_ref(ref)
+            parsed === nothing && continue
+            key = (parsed.id, parsed.version)
+            haskey(registry, key) && continue
+            msg = "`related`/`builds_on` references missing use case `$ref` (navigation only — not a CI gate)"
+            checks[case_name].warnings = vcat(checks[case_name].warnings, [msg])
+        end
+    end
+end
+
 function cross_validate_usecase_versions!(checks::Dict{String, UseCaseCheck}, dirs)
     registry = Dict{Tuple{String, Int}, String}()
     active_by_id = Dict{String, Vector{String}}()
@@ -303,6 +365,8 @@ function validate_usecase(dir::AbstractString, current_template::Int)
 
     id isa AbstractString && uv isa Int &&
         validate_lineage_frontmatter!(errors, warnings, meta, id, uv)
+    id isa AbstractString && uv isa Int &&
+        validate_relation_frontmatter!(errors, warnings, meta, id, uv)
 
     found = Set(section_headings(body))
     for title in REQUIRED_SECTION_TITLES
@@ -328,6 +392,7 @@ function validate_all_usecases()
     isempty(dirs) && error("No usecases/UC-* directories found under $(usecases_root())")
     checks = Dict(basename(dir) => validate_usecase(dir, current) for dir in dirs)
     cross_validate_usecase_versions!(checks, dirs)
+    cross_validate_usecase_relations!(checks, dirs)
     return current, collect(values(checks))
 end
 

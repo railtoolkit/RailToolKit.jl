@@ -1,9 +1,9 @@
 ---
-# Required frontmatter (template v2). Rewrite in place while the harness is WIP.
-# ID conventions in body: ACT-n, PRE-n, STEP-n, OUT-n, EXC-n, EX-n, TEST-n, Q-n
-id: UC-000                     # stable id; matches directory prefix UC-000-short-name
+# Required frontmatter (template v1). Rewrite in place while the harness is WIP.
+# ID conventions in body: ACT-n, PRE-n, STEP-n, A-n, OUT-n, EXC-n, EX-n, TEST-n, Q-n
+id: UC-NNN                     # stable id; matches directory prefix UC-NNN-short-name
 title: ""                      # short human title
-template_version: 2            # MUST match latest template/versions/vN.md when status is active
+template_version: 1            # MUST match latest template/versions/vN.md when status is active
 version: 1                     # workflow version for this id (integer); bump on material change
 status: draft                  # draft | active | deprecated
 owner: ""                      # GitHub handle or name
@@ -17,8 +17,13 @@ updated: YYYY-MM-DD
 #  merged_from: []           # source versions merged into this case (merge)
 #  superseded_by: null       # replacement ref when status: deprecated
 
-# Packages exercised by this case (integration surface).
-# Julia packages with calculate/import/… roles must be in the harness Project.toml.
+# Optional catalogue links — refs use UC-NNN@M. Navigation / planning only; NOT CI gates.
+# Each active case remains self-contained (own assets/ + test.jl). Do not import another
+# case's test or require another case to be active before activation.
+#related: []                 # peer cases (shared assets, same tutorial source, …)
+#builds_on: []               # intent dependency — read these first when binding; re-compute locally
+
+# Packages: integration surface. Julia calculate/import/… roles → harness Project.toml when active.
 # Non-Julia data contracts (e.g. railtoolkit/schema) use role: data and are not Pkg deps.
 packages:
   - name: TrainRuns
@@ -28,36 +33,52 @@ packages:
   # - name: OtherPkg
   #   role: ...
 
-# One-line pitch for listings and CI summaries
+# One-line pitch for listings and CI summaries (prefer intent, not API names)
 summary: ""
 ---
 
-# {{ title }}
+# <title from frontmatter>
 
-<!-- Copy this file to usecases/UC-NNN-short-name/usecase.md and replace placeholders.
-     Do not leave instructional HTML comments in active cases. -->
+<!-- Copy to usecases/UC-NNN-short-name/usecase.md. Set frontmatter; H1 = title field.
+     Remove this comment block when status is active (CI enforces).
+     Replace every > **Hint:** block with case content; remove hints you do not need.
+
+     Draft vs active:
+     - draft: domain language in Goal → Expected outcomes; packages may be candidates;
+       stay draft until decidable OUT-n exist.
+     - active: bind packages:, assets/, APIs, and test.jl; concrete asset paths; no HTML comments. -->
 
 ## Goal
 
-What result does this workflow produce, for whom?
-What decision or result should a reader trust afterward?
-What happens if this workflow does not exist or fails?
+> **Hint:** What result does this workflow produce, for whom? What decision or result
+> should a reader trust afterward? What happens if this workflow does not exist or fails?
+> Write in **domain / intent** language. Avoid tying the goal to a specific package or
+> API name unless that *is* the requirement.
+
+…
 
 ## Scope
 
 **In scope:**
 
-> What does this use case cover?
+> **Hint:** What capability or workflow does this use case cover? Prefer outcomes and
+> data needs over tool names.
+
+…
 
 **Out of scope:**
 
-> What does this use case explicitly NOT cover? Mandatory — without it, no end
+> **Hint:** What does this use case explicitly NOT cover? Mandatory — without it, no end
 > condition is definable.
+
+…
 
 ## Actors & systems
 
-Who or what sends data, runs code, or consumes results? Every actor referenced
-in the main scenario or verification must appear here.
+> **Hint:** Who or what sends data, runs code, or consumes results? Every actor referenced
+> in the main scenario or verification must appear here. Prefer **roles** (planner,
+> calculation service, data contract). Name concrete packages when binding for
+> `status: active`.
 
 | ID | Actor | Type | Role | What they need |
 |----|-------|------|------|----------------|
@@ -65,8 +86,9 @@ in the main scenario or verification must appear here.
 
 ## Preconditions
 
-What must be true before this use case starts? Which artifacts must already
-exist? What event triggers the flow?
+> **Hint:** What must be true before this use case starts? Which artifacts must already
+> exist? What event triggers the flow? Draft: domain terms. Active: may name concrete
+> asset paths and deps.
 
 | ID | Precondition |
 |----|--------------|
@@ -74,40 +96,43 @@ exist? What event triggers the flow?
 
 ## Main scenario
 
-Numbered steps a human (or script) follows. One action per step: *Actor — Action —
-affected data*. Name packages and entrypoints explicitly.
+> **Hint:** Numbered steps a human (or script) follows. One action per step:
+> *Actor — Action — affected data*. **Draft:** describe *what* happens (load formation,
+> compute run, read total time) without requiring a specific API. **Active:** name bound
+> packages and entrypoints; include a minimal code sketch that matches `test.jl`.
 
 | ID | Actor | Action | Data |
 |----|-------|--------|------|
 | STEP-1 | … | … | … |
 
 ```julia
-# Minimal sketch of the happy path (optional but preferred)
+# Hint (active): minimal sketch of the bound happy path (must match test.jl)
 ```
 
 ## Artifacts
 
-Inputs **and** outputs: data, settings, seeds, tolerances, reference files.
-List every **result-affecting** artifact.
+> **Hint:** List every **result-affecting** input and output (data, settings, seeds,
+> tolerances, reference files). Draft: describe formats and meaning (even if files do not
+> exist yet). Active: concrete paths under `assets/` with provenance.
 
 | ID | Direction | Artifact | Format / schema | Location | Notes |
 |----|-----------|----------|-----------------|----------|-------|
-| … | input / output | … | e.g. rolling-stock YAML | `assets/…` | units, provenance |
+| A-1 | input / output | … | e.g. rolling-stock YAML | `assets/…` | units, provenance |
 
 ## Expected outcomes
 
-What is true after this use case completes? This section determines whether the
-case is usable as a test.
+> **Hint:** What is true after this use case completes? This section determines whether
+> the case is usable as a test. Prefer **decidable results** (values, tolerances,
+> invariants) over “package X returned”. If no decidable `OUT-n` exists yet, set
+> `status: draft`.
 
 | ID | Result | Where you observe it | Pass criterion (decidable) |
 |----|--------|----------------------|----------------------------|
-| OUT-1 | … | e.g. `test.jl`, column `:t` | concrete value or tolerance |
-
-If no decidable `OUT-n` exists yet, set `status: draft`.
+| OUT-1 | … | e.g. total time, `test.jl` | concrete value or tolerance |
 
 ## Exceptions
 
-What can go wrong or deviate from the main scenario?
+> **Hint:** What can go wrong or deviate from the main scenario?
 
 | ID | Trigger condition | Expected behaviour | Severity |
 |----|-------------------|--------------------|----------|
@@ -115,42 +140,48 @@ What can go wrong or deviate from the main scenario?
 
 ## Worked example
 
-At least one complete, realistic input→output pair with real values or asset
-paths. Non-negotiable for cases moving toward `status: active`.
+> **Hint:** At least one complete, realistic input→output pair with real values or asset
+> paths. Non-negotiable for cases moving toward `status: active`.
 
 **EX-1:** Given … → When … → Then …
 
 ## Verification
 
-Formulate tests. Each `TEST-n` should reference at least one `OUT-n`, artifact,
-or exception. Use concrete values in Given and Then.
+> **Hint:** Formulate tests. Each `TEST-n` should reference at least one `OUT-n`, `A-n`,
+> or `EXC-n`. Use concrete values in Given and Then.
 
 | ID | Given (input with values) | When | Then (expected result with values) | Verifies |
 |----|---------------------------|------|-------------------------------------|----------|
 | TEST-1 | … | … | … | OUT-1 |
 
-**Julia test hook** (required for `status: active`):
+**Implementation binding** (required for `status: active`; may shorten to script + command once binding is documented above):
 
-- Script: `test.jl`
+- Concrete `packages:` in frontmatter (+ harness `Project.toml` for Julia deps)
+- Versioned `assets/` for every result-affecting input
+- Script: `test.jl` that proves the `OUT-n` / `TEST-n` checks
 - Command: `julia --project=. -e 'include("usecases/UC-NNN-short-name/test.jl")'`
 
 ## Assumptions & limits
 
-Model assumptions, operating domain, known non-goals, and failure modes.
-Do not use this section as a substitute for Scope.
+> **Hint:** Model assumptions, operating domain, and failure modes. Not a substitute for
+> Scope **Out of scope**.
+
+…
 
 ## Reproducibility
 
+> **Hint:** Required in substance for `status: active` — document what pins results:
+
 - Julia version / harness `Project.toml` compat bounds
 - Package versions (or compat bounds)
-- Asset pins and reference files
+- Asset pins and reference values (in assets or `test.jl`)
 - OS / CI runner notes if relevant
 - Random seeds / solver settings if they affect results
 
 ## Open questions
 
-List anything not yet decided. Mark blocking items; agents must not silently
-invent answers.
+> **Hint:** List anything not yet decided — including *which* implementation to bind.
+> Mark blocking items; agents must not silently invent answers.
 
 | ID | Question | Status | Owner | Blocking |
 |----|----------|--------|-------|----------|
@@ -158,6 +189,9 @@ invent answers.
 
 ## References
 
-- Upstream packages, schema docs, papers / DOIs
-- Related use cases (`UC-…`)
-- Issues / ADRs
+> **Hint:**
+>
+> - Domain / standards references (implementation-agnostic)
+> - Upstream packages, schema docs, papers / DOIs (when bound)
+> - Related use cases — see `related:` / `builds_on:` in frontmatter
+> - Issues / ADRs

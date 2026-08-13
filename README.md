@@ -27,43 +27,51 @@ type layer here — see [`AGENTS.md`](AGENTS.md) for agent scope and conventions
 
 ## Use-case lifecycle (draft → active)
 
-Use cases are meant to be **proposed first** and **tested later**, after upstream
-packages, schemas, or assets exist. The same `UC-NNN-short-name/` directory carries
-the workflow from proposal through integration.
+Use cases are **intent first, implementation when active**.
+
+- **Draft:** describe the workflow in domain language — goals, actors, data needs,
+  decidable outcomes — without requiring a specific package or API.
+- **Active:** bind a concrete implementation (`packages:`, `assets/`, APIs,
+  `test.jl`) so CI can prove those outcomes.
+
+Propose early; integrate and test later. The same `UC-NNN-short-name/` directory
+carries the case from proposal through binding.
 
 ```text
-propose (draft)  →  work in parallel  →  integrate & test (active)
+propose (draft)  →  work in parallel  →  bind & prove (active)
      │                    │                        │
- usecase.md          build pkgs,            assets/ + test.jl
- narrative only      resolve Q-n,           Project.toml dep
-                     fill Artifacts          status: active → CI
+ intent narrative    build pkgs,            packages: + assets/
+ implementation-     resolve Q-n,           test.jl + APIs
+ agnostic            choose binding         status: active → CI
 ```
 
-| `status` | Catalogue in CI | `test.jl` | Runs in CI | Harness `Project.toml` |
-|----------|-----------------|-----------|------------|-------------------------|
-| **draft** | yes (structure) | optional | no | not required yet |
-| **active** | yes (strict) | required | yes | required for listed Julia pkgs |
-| **deprecated** | yes | — | no | remove when unused |
+| `status` | Narrative | Catalogue in CI | `test.jl` | Runs in CI | Harness `Project.toml` |
+|----------|-----------|-----------------|-----------|------------|-------------------------|
+| **draft** | intent / domain | yes (structure) | optional | no | not required yet |
+| **active** | intent + **bound implementation** | yes (strict) | required | yes | required for listed Julia pkgs |
+| **deprecated** | retained for lineage | yes | — | no | remove when unused |
 
 **Draft** — land the contract before code exists:
 
 - Copy [`usecases/template/TEMPLATE.md`](usecases/template/TEMPLATE.md) to
   `usecases/UC-NNN-short-name/usecase.md` with **`status: draft`**
-- Fill Goal, Scope, Main scenario, Artifacts, and **Open questions** (`Q-n`) —
-  e.g. blocking until a package is published
-- List intended integration surface under **`packages:`** (future deps are fine)
+- Fill Goal, Scope, Main scenario, Artifacts, and **Open questions** (`Q-n`) in
+  domain terms — e.g. blocking until a package is chosen or published
+- `packages:` may list candidates or stay TBD
 - If no decidable **Expected outcomes** (`OUT-n`) exist yet, stay draft
 
 **In between** — months of other work are normal: packages ship elsewhere,
-schemas settle, assets are collected. The draft case stays the stable target.
+schemas settle, assets are collected. The draft case stays the stable **intent**
+target.
 
-**Active** — when the workflow is runnable and checkable:
+**Active** — when an implementation can prove the outcomes:
 
-1. Add **`assets/`** (inputs); put regression expected values in **`test.jl`**
-2. Write **`test.jl`** implementing **Verification** (`TEST-n` / `OUT-n`)
-3. Add Julia **`packages:`** to root **`Project.toml`**
-4. Set **`status: active`**, update **`updated`**, remove template HTML comments
-5. CI discovers and runs the case automatically — nothing is hardcoded
+1. Bind **`packages:`** and add Julia deps to root **`Project.toml`**
+2. Add **`assets/`** (inputs); put regression expected values in **`test.jl`**
+3. Write **`test.jl`** implementing **Verification** (`TEST-n` / `OUT-n`)
+4. Name concrete entrypoints in the main scenario (code sketch optional but preferred)
+5. Set **`status: active`**, update **`updated`**, remove template HTML comments
+6. CI discovers and runs the case automatically — nothing is hardcoded
 
 You can run `test.jl` locally before activation; CI ignores it until **`status: active`**.
 
@@ -84,16 +92,34 @@ CI allows at most **one `status: active` directory per `id`**. Each `(id, versio
 pair must be unique across the catalogue. Lineage refs must point at existing
 cases when declared.
 
+### Catalogue links (`related`, `builds_on`)
+
+Optional frontmatter for **navigation and binding order** — not CI prerequisites.
+
+| Field | Meaning |
+|-------|---------|
+| **`related:`** | Peer cases (shared assets, same tutorial source, complementary scope) |
+| **`builds_on:`** | Read/bind these first; this case extends their intent |
+
+Refs use **`UC-NNN@M`** (same as `lineage`). Catalogue validation checks format
+and warns on missing refs; it does **not** block activation or run cases in
+dependency order.
+
+Each **`status: active`** case stays **self-contained**: own `assets/` and
+`test.jl` that prove its `OUT-n` locally. Do not import another case's test or
+require another case to be active first — re-compute or vendor inputs in the
+dependent case instead.
+
 ## What a use case contains
 
 Each `usecase.md` follows [`usecases/template/TEMPLATE.md`](usecases/template/TEMPLATE.md):
 
-- **Human narrative:** Goal, Scope, Actors, Preconditions, Main scenario
-- **Artifacts:** inputs and outputs with schema, paths, provenance
-- **Testability:** Expected outcomes (`OUT-n`), Exceptions, Worked example, Verification (`TEST-n` + `test.jl`)
+- **Intent (always):** Goal, Scope, Actors, Preconditions, Main scenario, Expected outcomes
+- **Artifacts / testability:** formats and decidable `OUT-n`; concrete paths when active
+- **Implementation binding (active):** `packages:`, `assets/`, APIs in the scenario, `test.jl`
 - **Context:** Assumptions, Reproducibility, Open questions, References
 
-ID prefixes within a case: `ACT-n`, `PRE-n`, `STEP-n`, `OUT-n`, `EXC-n`, `EX-n`, `TEST-n`, `Q-n`.
+ID prefixes within a case: `ACT-n`, `PRE-n`, `STEP-n`, `A-n`, `OUT-n`, `EXC-n`, `EX-n`, `TEST-n`, `Q-n`.
 
 Layout: one directory per case — `usecases/UC-<nnn>-<short-name>/` with `usecase.md`,
 `assets/`, and (when active) `test.jl`. Keep cases under **`usecases/`**, not under
@@ -101,8 +127,8 @@ Layout: one directory per case — `usecases/UC-<nnn>-<short-name>/` with `useca
 
 Rules:
 
-1. Declare **`template_version: 1`** (see [`CHANGELOG.md`](CHANGELOG.md#use-case-template)).
-2. **`status: active`** requires decidable outcomes, `test.jl`, and passing CI.
+1. Declare **`template_version: 1`** and **`version: 1`** (see [`CHANGELOG.md`](CHANGELOG.md#use-case-template)).
+2. Keep the narrative **implementation-agnostic** until binding; **`status: active`** requires a concrete binding, decidable outcomes, `test.jl`, and passing CI.
 3. Do not use a `layers` frontmatter field — model layers as their own use case.
 4. Non-Julia data contracts (e.g. `schema`) use `role: data` in `packages:` and are not Pkg deps.
 
