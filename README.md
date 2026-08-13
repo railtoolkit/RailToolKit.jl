@@ -28,7 +28,7 @@ type layer here — see [`AGENTS.md`](AGENTS.md) for agent scope and conventions
 ## Use-case lifecycle (draft → active)
 
 Use cases are meant to be **proposed first** and **tested later**, after upstream
-packages, schemas, or assets exist. The same `UC-NNN-slug/` directory carries
+packages, schemas, or assets exist. The same `UC-NNN-short-name/` directory carries
 the workflow from proposal through integration.
 
 ```text
@@ -48,7 +48,7 @@ propose (draft)  →  work in parallel  →  integrate & test (active)
 **Draft** — land the contract before code exists:
 
 - Copy [`usecases/template/TEMPLATE.md`](usecases/template/TEMPLATE.md) to
-  `usecases/UC-NNN-slug/usecase.md` with **`status: draft`**
+  `usecases/UC-NNN-short-name/usecase.md` with **`status: draft`**
 - Fill Goal, Scope, Main scenario, Artifacts, and **Open questions** (`Q-n`) —
   e.g. blocking until a package is published
 - List intended integration surface under **`packages:`** (future deps are fine)
@@ -59,13 +59,30 @@ schemas settle, assets are collected. The draft case stays the stable target.
 
 **Active** — when the workflow is runnable and checkable:
 
-1. Add **`assets/`** (and optional `assets/reference.*` for regression)
+1. Add **`assets/`** (inputs); put regression expected values in **`test.jl`**
 2. Write **`test.jl`** implementing **Verification** (`TEST-n` / `OUT-n`)
 3. Add Julia **`packages:`** to root **`Project.toml`**
 4. Set **`status: active`**, update **`updated`**, remove template HTML comments
 5. CI discovers and runs the case automatically — nothing is hardcoded
 
 You can run `test.jl` locally before activation; CI ignores it until **`status: active`**.
+
+### Use-case versions (update, split, merge)
+
+Each case has a stable **`id`** (`UC-001`, …) and a workflow **`version`**
+(integer). Reference a specific revision as **`UC-001@2`**. Optional **`lineage`**
+in frontmatter records how versions relate:
+
+| Change | What to do | `lineage` |
+|--------|------------|-----------|
+| **Update** | Bump `version` in the same or a new directory; deprecate the old one | `supersedes: [UC-001@1]` |
+| **Split** | New ids (e.g. `UC-003`, `UC-004`) from one parent | `split_from: UC-001@2` |
+| **Merge** | New id combining workflows | `merged_from: [UC-001@1, UC-002@1]` |
+| **Retire** | Set `status: deprecated` | `superseded_by: UC-001@2` |
+
+CI allows at most **one `status: active` directory per `id`**. Each `(id, version)`
+pair must be unique across the catalogue. Lineage refs must point at existing
+cases when declared.
 
 ## What a use case contains
 
@@ -78,7 +95,7 @@ Each `usecase.md` follows [`usecases/template/TEMPLATE.md`](usecases/template/TE
 
 ID prefixes within a case: `ACT-n`, `PRE-n`, `STEP-n`, `OUT-n`, `EXC-n`, `EX-n`, `TEST-n`, `Q-n`.
 
-Layout: one directory per case — `usecases/UC-<nnn>-<slug>/` with `usecase.md`,
+Layout: one directory per case — `usecases/UC-<nnn>-<short-name>/` with `usecase.md`,
 `assets/`, and (when active) `test.jl`. Keep cases under **`usecases/`**, not under
 `src/` or `test/`.
 
@@ -92,8 +109,8 @@ Rules:
 ### Add a use case
 
 ```sh
-mkdir -p usecases/UC-00N-my-slug/assets
-cp usecases/template/TEMPLATE.md usecases/UC-00N-my-slug/usecase.md
+mkdir -p usecases/UC-00N-short-name/assets
+cp usecases/template/TEMPLATE.md usecases/UC-00N-short-name/usecase.md
 # edit frontmatter + sections; add assets/ and test.jl when ready for active
 ```
 
@@ -107,6 +124,7 @@ julia> using Pkg; Pkg.test()
 ```
 
 First active case: [`usecases/UC-001-running-time-minimal/`](usecases/UC-001-running-time-minimal/).
+POI / block sections: [`usecases/UC-002-block-section-pois/`](usecases/UC-002-block-section-pois/).
 
 Single case:
 

@@ -7,8 +7,8 @@ Package version follows [`Project.toml`](Project.toml) SemVer. **Use-case templa
 versions are independent** — a template bump means the documentation/test contract
 for describing a workflow changed, not necessarily a package release.
 
-While the harness is WIP, template v1 may be revised in place; rewrite cases to
-the current form when you touch them.
+While the harness is WIP, the template may be revised in place; migrate active
+cases when you bump `template/versions/vN.md`.
 
 ---
 
@@ -19,6 +19,7 @@ the current form when you touch them.
 - Initial **thin integration harness**: versioned use cases, catalogue validation, CI
 - Re-export TrainRuns public API for active cases
 - **UC-001-running-time-minimal** — schema-valid YAML assets, regression test against reference running time
+- **UC-002-block-section-pois** — labeled block-section POIs with front/rear measures; occupation time from meaningful labels
 - `test/catalogue.jl` + `test/runtests.jl` — frontmatter gates and discovery of `status: active` cases
 
 ---
@@ -31,7 +32,8 @@ Human + Julia reference form for RailToolKit integration cases. Inspired by
 testability-oriented use-case writing (actors, scope, decidable outcomes, worked
 examples) without import/quality machinery.
 
-**Required frontmatter:** `id`, `title`, `template_version`, `status`, `owner`,
+**Required frontmatter:** `id`, `version` (positive integer — workflow revision for
+this `id`), `title`, `template_version`, `status`, `owner`,
 `created`, `updated`, `packages`, `summary`.
 
 Extra frontmatter keys are allowed (e.g. legacy `layers` on cases not yet
@@ -48,6 +50,16 @@ Assumptions & limits, Reproducibility, Open questions, References.
 **Active gates:** `status: active` requires `test.jl`, matching
 `template_version`, no instructional HTML comments, and at least one decidable
 `OUT-n` covered by verification (see case narrative + `test.jl`).
+
+**Optional frontmatter:** `lineage` mapping:
+
+- `supersedes: [UC-NNN@M, …]` — this version replaces those (update)
+- `split_from: UC-NNN@M` — this case was split from that version
+- `merged_from: [UC-NNN@M, …]` — this case merges those versions
+- `superseded_by: UC-NNN@M` — replacement when `status: deprecated`
+
+Refs use **`UC-NNN@M`** (`id@version`). CI enforces unique `(id, version)` pairs,
+at most one **`status: active`** directory per `id`, and resolvable lineage refs.
 
 #### Migration
 

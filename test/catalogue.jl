@@ -6,6 +6,7 @@ const REQUIRED_FRONTMATTER = (
     :id,
     :title,
     :template_version,
+    :version,
     :status,
     :owner,
     :created,
@@ -13,6 +14,10 @@ const REQUIRED_FRONTMATTER = (
     :packages,
     :summary,
 )
+
+const LINEAGE_LIST_KEYS = ("supersedes", "merged_from")
+const LINEAGE_SCALAR_KEYS = ("split_from", "superseded_by")
+const USECASE_REF = r"^(UC-\d+)@(\d+)$"
 
 const REQUIRED_SECTION_TITLES = (
     "Goal",
@@ -30,9 +35,6 @@ const REQUIRED_SECTION_TITLES = (
     "Open questions",
     "References",
 )
-
-# Early draft body shape; section checks skipped until migrated.
-const LEGACY_BODY_EXEMPT = Set(["UC-001-running-time-minimal"])
 
 const ALLOWED_STATUS = Set(["draft", "active", "deprecated"])
 
@@ -108,6 +110,146 @@ function template_version_int(meta::AbstractDict)
     return nothing
 end
 
+function usecase_version_int(meta::AbstractDict)
+    haskey(meta, "version") || return nothing
+    v = meta["version"]
+    if v isa Integer
+        return Int(v)
+    elseif v isa AbstractString
+        return parse(Int, v)
+    end
+    return nothing
+end
+
+function parse_usecase_ref(ref::AbstractString)
+    m = match(USECASE_REF, ref)
+    m === nothing && return nothing
+    return (id=m.captures[1], version=parse(Int, m.captures[2]))
+end
+
+function usecase_ref(id::AbstractString, version::Int)
+    return "$id@$version"
+end
+
+function load_usecase_meta(dir::AbstractString)
+    usecase = joinpath(dir, "usecase.md")
+    isfile(usecase) || return nothing
+    text = read(usecase, String)
+    yaml, _ = split_frontmatter(text)
+    return load_frontmatter(yaml)
+end
+
+function validate_lineage_frontmatter!(errors, warnings, meta::AbstractDict, id, version)
+    haskey(meta, "lineage") || return
+    lineage = meta["lineage"]
+    if !(lineage isa AbstractDict)
+        push!(errors, "`lineage` must be a YAML mapping")
+        return
+    end
+
+    self_ref = id isa AbstractString && version isa Int ? usecase_ref(id, version) : nothing
+
+    for key in LINEAGE_LIST_KEYS
+        haskey(lineage, key) || continue
+        val = lineage[key]
+        val === nothing && continue
+        if !(val isa AbstractVector)
+            push!(errors, "lineage.$key must be a list of UC-NNN@M refs")
+            continue
+        end
+        for item in val
+            item isa AbstractString || begin
+                push!(errors, "lineage.$key entries must be strings (UC-NNN@M)")
+                continue
+            end
+            parse_usecase_ref(item) === nothing &&
+                push!(errors, "invalid lineage ref `$item` in lineage.$key (expected UC-NNN@M)")
+            self_ref !== nothing && item == self_ref &&
+                push!(errors, "lineage.$key must not reference this case itself (`$item`)")
+        end
+    end
+
+    for key in LINEAGE_SCALAR_KEYS
+        haskey(lineage, key) || continue
+        val = lineage[key]
+        val === nothing && continue
+        val isa AbstractString || begin
+            push!(errors, "lineage.$key must be a UC-NNN@M ref or null")
+            continue
+        end
+        parse_usecase_ref(val) === nothing &&
+            push!(errors, "invalid lineage ref `$val` in lineage.$key (expected UC-NNN@M)")
+        self_ref !== nothing && val == self_ref &&
+            push!(errors, "lineage.$key must not reference this case itself (`$val`)")
+    end
+end
+
+function cross_validate_usecase_versions!(checks::Dict{String, UseCaseCheck}, dirs)
+    registry = Dict{Tuple{String, Int}, String}()
+    active_by_id = Dict{String, Vector{String}}()
+
+    for dir in dirs
+        case_name = basename(dir)
+        meta = load_usecase_meta(dir)
+        meta === nothing && continue
+        id = get(meta, "id", nothing)
+        version = usecase_version_int(meta)
+        id isa AbstractString || continue
+        version === nothing && continue
+
+        key = (id, version)
+        if haskey(registry, key)
+            other = registry[key]
+            msg = "duplicate use-case version `$id@$version` (also in `$other`)"
+            checks[case_name].errors = vcat(checks[case_name].errors, [msg])
+            checks[other].errors = vcat(checks[other].errors, [msg])
+        else
+            registry[key] = case_name
+        end
+
+        get(meta, "status", nothing) == "active" || continue
+        push!(get!(active_by_id, id, String[]), case_name)
+    end
+
+    for (id, cases) in active_by_id
+        length(cases) <= 1 && continue
+        msg = "multiple active versions/directories for id `$id`: $(join(cases, ", "))"
+        for case_name in cases
+            checks[case_name].errors = vcat(checks[case_name].errors, [msg])
+        end
+    end
+
+    for dir in dirs
+        case_name = basename(dir)
+        meta = load_usecase_meta(dir)
+        meta === nothing && continue
+        lineage = get(meta, "lineage", nothing)
+        lineage isa AbstractDict || continue
+
+        refs = String[]
+        for key in LINEAGE_LIST_KEYS
+            haskey(lineage, key) || continue
+            val = lineage[key]
+            val isa AbstractVector || continue
+            append!(refs, filter(x -> x isa AbstractString, val))
+        end
+        for key in LINEAGE_SCALAR_KEYS
+            haskey(lineage, key) || continue
+            val = lineage[key]
+            val isa AbstractString && push!(refs, val)
+        end
+
+        for ref in refs
+            parsed = parse_usecase_ref(ref)
+            parsed === nothing && continue
+            key = (parsed.id, parsed.version)
+            haskey(registry, key) && continue
+            msg = "lineage references missing use case `$ref`"
+            checks[case_name].errors = vcat(checks[case_name].errors, [msg])
+        end
+    end
+end
+
 function validate_usecase(dir::AbstractString, current_template::Int)
     case_name = basename(dir)
     errors = String[]
@@ -146,17 +288,25 @@ function validate_usecase(dir::AbstractString, current_template::Int)
     tv === nothing && haskey(meta, "template_version") &&
         push!(errors, "unreadable `template_version`")
 
+    uv = usecase_version_int(meta)
+    if uv === nothing && haskey(meta, "version")
+        push!(errors, "unreadable `version`")
+    elseif uv !== nothing && uv < 1
+        push!(errors, "`version` must be a positive integer")
+    end
+
     id = get(meta, "id", nothing)
     dirname_id = match(r"^(UC-\d+)", case_name)
     if id isa AbstractString && dirname_id !== nothing && id != dirname_id.captures[1]
         push!(errors, "frontmatter id `$id` does not match directory prefix `$(dirname_id.captures[1])`")
     end
 
-    if case_name ∉ LEGACY_BODY_EXEMPT
-        found = Set(section_headings(body))
-        for title in REQUIRED_SECTION_TITLES
-            title in found || push!(errors, "missing section heading `$title`")
-        end
+    id isa AbstractString && uv isa Int &&
+        validate_lineage_frontmatter!(errors, warnings, meta, id, uv)
+
+    found = Set(section_headings(body))
+    for title in REQUIRED_SECTION_TITLES
+        title in found || push!(errors, "missing section heading `$title`")
     end
 
     if status == "active"
@@ -176,8 +326,9 @@ function validate_all_usecases()
     current = current_template_version()
     dirs = usecase_directories()
     isempty(dirs) && error("No usecases/UC-* directories found under $(usecases_root())")
-    checks = [validate_usecase(dir, current) for dir in dirs]
-    return current, checks
+    checks = Dict(basename(dir) => validate_usecase(dir, current) for dir in dirs)
+    cross_validate_usecase_versions!(checks, dirs)
+    return current, collect(values(checks))
 end
 
 function active_usecase_test_files()

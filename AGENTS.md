@@ -1,10 +1,10 @@
 # AGENTS.md
 
-Instructions for coding agents (and contributors) working in this repository.
+Instructions for **coding agents** (and contributors) changing this repository.
 
-**Audience:** LLM agents implementing or extending `RailToolKit.jl` for humans and julia.  
-**Scope:** Thin integration harness — use cases, assets, CI, optional re-exports.  
-**Non-goal:** A classical shared-types package (`RailCore.jl` was rejected). Do not invent abstract domain APIs “for the ecosystem” in this harness.
+For project overview, use-case lifecycle, and versioning, read [`README.md`](README.md) first. This file states **harness boundaries**, layout, and rules agents should follow when adding or changing use cases, tests, or dependencies.
+
+This repository is an **integration harness**, not a domain library: versioned workflows under `usecases/`, assets, catalogue validation, CI, and optional re-exports. Do not add a shared-types layer (`RailCore`-style) or invent abstract domain APIs ahead of evidence from active cases.
 
 ## Mission
 
@@ -18,9 +18,7 @@ The product is the **use-case catalogue + CI**. Registry publication is optional
 
 The harness is **WIP** — rewrite use-case forms freely when improving cases; do not treat the template as a frozen public API.
 
-**First concrete target:** `UC-001-running-time-minimal` — TrainRuns running-time workflow on schema-valid YAML, gated by tests.
-
-Success: clone → `Pkg.instantiate()` → `Pkg.test()` → reproduce UC-001 from versioned assets without a shared core types package.
+Success: clone → `Pkg.instantiate()` → `Pkg.test()` → reproduce every **`status: active`** case from its versioned assets, without a shared core types package.
 
 ## What this is and is not
 
@@ -31,32 +29,33 @@ Success: clone → `Pkg.instantiate()` → `Pkg.test()` → reproduce UC-001 fro
 
 ### Is not
 
-- A home for shared abstract types (`RailVehicle`, `Formation`, `RunningPath`, `SimulatedRun`, …) or a `RailCore` package.
-- An owner of TrainRuns algorithms, physics, or schema definitions (those stay upstream).
-- A place to reimplement rolling-stock / path parsing unless a case explicitly needs a thin test adapter.
-- A big-bang layer-model implementation (`shortest_path`, interlocking, timetabling, …).
+- A home for shared abstract domain types or a `RailCore` package.
+- An owner of upstream algorithms, physics, schemas, or data formats (those stay in the packages / contracts each case lists).
+- A place to reimplement upstream parsers or solvers unless a case explicitly needs a thin test adapter.
+- A big-bang architecture layer that invents APIs ahead of use cases.
 
-**Rule:** Contracts grow *from* active use cases. Extract shared Julia types only when evidence from cases demands it — not in this phase.
+**Rule:** Contracts grow *from* active use cases. Extract shared Julia types only when evidence from cases demands it — not prophylactically.
 
 ## Authoritative sources
 
 | Document | Role |
 |----------|------|
-| [`README.md`](README.md) | Harness overview, **use-case lifecycle** (draft → active), how to add cases |
+| [`README.md`](README.md) | Harness overview, **use-case lifecycle** (draft → active), versioning / lineage, how to add cases |
 | [`usecases/template/TEMPLATE.md`](usecases/template/TEMPLATE.md) + [`versions/vN.md`](usecases/template/versions/) + [`CHANGELOG.md`](CHANGELOG.md) | Required fields; migration when the form changes |
-| [`usecases/UC-001-running-time-minimal/usecase.md`](usecases/UC-001-running-time-minimal/usecase.md) | First active case (early draft body — migrate when touched) |
-| TrainRuns.jl + RailToolKit `schema` | Public API and data contracts for UC-001 |
+| [`usecases/UC-*/usecase.md`](usecases/) | Per-case workflow narrative, artifacts, verification (`status: active` cases are CI gates) |
+| Upstream packages + data contracts | As declared in each case's `packages:` frontmatter |
 
-If sources conflict on *scope*, prefer this file. On *use-case form*, prefer `README.md` and the template. On *TrainRuns behaviour*, prefer TrainRuns + schema.
+If sources conflict on *harness scope*, prefer this file. On *use-case form*, prefer `README.md` and the template. On *package behaviour*, prefer the upstream package and data contract named by the case.
 
 ## Do / don't
 
 **Do**
 
 - Start from an active or draft `UC-*` and stabilize assets + `test.jl`
-- Depend inward on calculation packages (TrainRuns for UC-001); pin compat in `Project.toml`
+- Depend inward on packages listed by active cases; pin compat in `Project.toml`
 - List every result-affecting artifact in **Artifacts**; state decidable **Expected outcomes** (`OUT-n`)
 - Use **Scope** (mandatory out-of-scope) and **Verification** (`TEST-n` + `test.jl`)
+- Bump case **`version`** and record **`lineage`** when updating, splitting, or merging workflows
 - Add `template/versions/vN.md` and migrate all active cases when you need a formal template break
 - Read authoritative sources before adding files
 - Prefer assets + tests over speculative package API surface
@@ -64,12 +63,12 @@ If sources conflict on *scope*, prefer this file. On *use-case form*, prefer `RE
 **Don't**
 
 - Invent shared abstract types or a `RailCore` package
-- Wrap TrainRuns in a parallel API (`RailToolKit.trainrun` that hides inputs)
-- Reimplement schema parsing or TrainRuns physics in this repo
+- Wrap upstream APIs in a parallel harness API that hides inputs
+- Reimplement upstream parsing, physics, or solvers in this repo
 - Add dependencies that no active use case lists under `packages:`
 - Use `layers` frontmatter or layer-model as a catalogue cross-cut (model layers as their own use case)
 - Mark `status: active` without a passing `test.jl` and matching `template_version`
-- Vendor schema JSON into Julia types unless required for a test helper
+- Vendor external schemas into Julia types unless required for a test helper
 - Silently fork upstream behaviour — record gaps in Open questions / References or open upstream issues
 
 ## Layout
@@ -82,7 +81,7 @@ test/
   runtests.jl             # catalogue gates + active UC-*/test.jl
 usecases/
   template/               # TEMPLATE.md, versions/
-  UC-NNN-slug/
+  UC-NNN-short-name/
     usecase.md
     assets/
     test.jl
@@ -100,86 +99,84 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 Single case:
 
 ```sh
-julia --project=. -e 'include("usecases/UC-001-running-time-minimal/test.jl")'
+julia --project=. -e 'include("usecases/UC-NNN-short-name/test.jl")'
 ```
 
-## Use-case conventions (template v1)
+## Use-case conventions
 
-Required sections: Goal, Scope, Actors & systems, Preconditions, Main scenario,
-Artifacts, Expected outcomes, Exceptions, Worked example, Verification,
-Assumptions & limits, Reproducibility, Open questions, References.
+Required sections and frontmatter: see the current [`TEMPLATE.md`](usecases/template/TEMPLATE.md)
+and [`CHANGELOG.md`](CHANGELOG.md#use-case-template).
 
 - **`status: draft`** — propose workflow before packages or tests exist; CI validates structure only
 - **`status: active`** — requires `test.jl`, decidable `OUT-n`, matching `template_version`, passing CI
-- `packages:` may include non-Julia data contracts (`schema`, `role: data`); only Julia calculate/import/… packages belong in `Project.toml`
+- **`version`** — workflow revision for the stable `id`; use **`lineage`** for update/split/merge (refs `UC-NNN@M`)
+- `packages:` may include non-Julia data contracts (`role: data`); only Julia calculate/import/… packages belong in `Project.toml`
 - Active cases: no instructional HTML comments; `template_version` matches latest `template/versions/vN.md`
-- Prefer regression against `assets/reference.*` with an explicit tolerance; smoke-only only while `status: draft`
+- Prefer regression constants in `test.jl` with an explicit tolerance; smoke-only only while `status: draft`
 - ID prefixes: `ACT-n`, `PRE-n`, `STEP-n`, `OUT-n`, `EXC-n`, `EX-n`, `TEST-n`, `Q-n`
 
-Full lifecycle: [`README.md`](README.md#use-case-lifecycle-draft--active).
-
-`UC-001-running-time-minimal` still uses an early draft body; migrate it when touched — do not copy its section names for new cases.
+Full lifecycle and versioning: [`README.md`](README.md#use-case-lifecycle-draft--active).
 
 ## Harness policies
 
 ### Re-exports
 
-- Re-export **only** symbols needed by documented active cases (UC-001: TrainRuns public API).
-- Do not wrap TrainRuns in a parallel API.
+- Re-export **only** symbols needed by documented active cases.
+- Do not wrap upstream packages in a parallel API.
 
 ### Dependencies
 
-- Depend **inward** on calculation packages, never the reverse.
+- Depend **inward** on calculation / integration packages, never the reverse.
 - Add a new `Project.toml` dependency only when an **active** use case lists it under `packages:`.
 
 ### CI gates
 
 - CI fails if any `status: active` case has `template_version` ≠ latest `usecases/template/versions/vN.md`, or missing required frontmatter.
 - CI fails if an active case lacks a runnable `test.jl`.
+- CI fails on duplicate `(id, version)`, unresolved `lineage` refs, or multiple active directories for the same `id`.
 - Template field changes: add `versions/vN.md`, document in [`CHANGELOG.md`](CHANGELOG.md), migrate all active cases in the **same** change set.
 
-## UC-001 requirements
+## Active case requirements
 
-Workflow surface (not a new RailCore package):
+For every **`status: active`** case:
 
 | Layer | Contract | Source of truth |
 |-------|----------|-----------------|
-| Data | Rolling-stock YAML + running-path YAML | RailToolKit/schema |
-| Compute | `Train` / `Path` + `trainrun(train, path)` | TrainRuns.jl |
+| Data | Inputs listed in **Artifacts** | Data contracts / schemas named under `packages:` |
+| Compute | Public APIs named in the main scenario | Upstream Julia packages under `packages:` |
 | Integration | Assets + assertions + `usecase.md` | This harness |
-
-Naming guidance (do not force renames in TrainRuns): formation ≈ `Train`; running path ≈ `Path`; simulated run ≈ `trainrun` result.
 
 Deliverables:
 
 1. Filled `usecase.md` — set `status: active` only when tests pass in CI.
-2. **Assets** under `assets/` — schema-valid YAML with provenance in Artifacts.
-3. **`test.jl`** — load via TrainRuns, run `trainrun`, assert finite positive time; prefer regression against `assets/reference.*` within explicit tolerance.
+2. **Assets** under `assets/` — every result-affecting input, with provenance in Artifacts.
+3. **`test.jl`** — exercises the documented workflow; prefer regression constants with explicit tolerance.
 4. **Reproducibility** — pinned compat in `Project.toml` so CI is non-flaky.
 
 Statelessness: every result-affecting input listed in Artifacts; tests do not mutate asset files or rely on hidden globals.
 
-## Out of scope (phase 1)
+## Out of scope (harness)
 
-- Shared abstract type package or extracting `Formation` / `RunningPath` / `SimulatedRun` into RailToolKit
-- TimetableOpt, InfraModel, capacity, energy integration cases (beyond listing future IDs)
-- RailML import/export, OSM fetchers, Python bridges
-- Reverse layer-model design from architecture docs
-- Publishing to General registry as a blocker for UC-001
-- Redesigning TrainRuns internals
+- Shared abstract type package extracted “for the ecosystem”
+- Implementing domain algorithms that belong upstream
+- Reverse-engineering a full layer-model API from architecture docs ahead of cases
+- Publishing to General registry as a blocker for landing use cases
+- Silently redesigning or forking upstream package internals
+
+Future workflows (timetabling, capacity, RailML, …) belong as **draft or active use cases**, not as harness APIs.
 
 ## Upstream gaps
 
-If TrainRuns or schema behaviour blocks a case, record it in the use case (Open questions / References) or open an upstream issue — do not fork behaviour silently.
+If an upstream package or data contract blocks a case, record it in that case (Open questions / References) or open an upstream issue — do not fork behaviour silently here.
 
 When tempted to add abstract types “for cleanliness,” refuse — record the need in the use case or an issue instead.
 
-## Acceptance checklist (phase 1)
+## Acceptance checklist
 
 - [ ] No shared domain-type core package introduced
-- [ ] Template v1 process respected (`versions/` + root [`CHANGELOG.md`](CHANGELOG.md) / migration rule)
-- [ ] UC-001 documents TrainRuns + schema contracts and lists all result-affecting inputs
-- [ ] Versioned assets load and `trainrun` runs in automated tests
-- [ ] Harness `Project.toml` depends on TrainRuns; optional re-exports only
-- [ ] Active-case CI gates defined for template version + tests
-- [ ] Out-of-scope items absent from the implementation
+- [ ] Template process respected (`versions/` + root [`CHANGELOG.md`](CHANGELOG.md) / migration rule)
+- [ ] Each active case documents its packages/contracts and lists all result-affecting inputs
+- [ ] Versioned assets load and the documented workflow runs in automated tests
+- [ ] Harness `Project.toml` depends only on packages required by active cases; optional re-exports only
+- [ ] Active-case CI gates defined for template version, lineage/version uniqueness, and tests
+- [ ] Out-of-scope items absent from the harness implementation
