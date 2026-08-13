@@ -108,7 +108,7 @@ function write_packages_toml!(src_dir::AbstractString, surfaces::Vector{PackageS
 end
 
 function package_doc_href(name::AbstractString, page_path::Union{String, Nothing}; from_generated::Bool=true)
-    page_path === nothing && return "``$name``"
+    page_path === nothing && return "`$name`"
     from_generated && return "[$name]($(basename(page_path)))"
     return "[$name]($page_path)"
 end
@@ -141,7 +141,7 @@ function render_package_page(surface::PackageSurface)
     append!(lines, String[
         "# $name",
         "",
-        "``$name`` is listed under `packages:` in an **active** use case.",
+        "`$name` is listed under `packages:` in an **active** use case.",
         "",
         "## Harness status",
         "",
@@ -186,8 +186,9 @@ function render_packages_index(surfaces::Vector{PackageSurface})
         "not from draft or deprecated cases, and not only from packages already listed in the",
         "harness [`Project.toml`](https://github.com/railtoolkit/RailToolKit.jl/blob/main/Project.toml).",
         "",
-        "Draft cases may list candidate packages; they appear here only after activation.",
-        "Package landing pages are generated automatically under `docs/src/generated/packages/`.",
+        "Draft and deprecated cases still appear in the [catalogue](catalogue_table.md); they",
+        "do not create package landing pages. Package pages are generated automatically under",
+        "`docs/src/generated/packages/`.",
         "",
         "| Status | Meaning |",
         "|--------|---------|",

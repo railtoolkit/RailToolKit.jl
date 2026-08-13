@@ -25,7 +25,7 @@ function generate_docs_pages!(src_dir::AbstractString)
     write(joinpath(generated_dir, "catalogue_table.md"), render_catalogue_table(records))
     write(joinpath(generated_dir, "packages.md"), render_packages_index(surfaces))
 
-    usecase_pages = [record.page_ref => record.page_path for record in records]
+    usecase_pages = usecase_sidebar_pages(records)
     return (
         usecase_pages=usecase_pages,
         package_pages=package_sidebar_pages(surfaces),
