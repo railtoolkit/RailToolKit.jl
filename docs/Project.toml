@@ -1,0 +1,13 @@
+name = "RailToolKitDocs"
+
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+RailToolKit = "38c93756-510a-4e6b-882b-a93ae55834d0"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+
+[sources]
+RailToolKit = {path = ".."}
+
+[compat]
+Documenter = "1"
+julia = "1.10"
