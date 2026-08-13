@@ -39,7 +39,8 @@ summary: ""
 
 # <title from frontmatter>
 
-<!-- Copy to usecases/UC-NNN-short-name/usecase.md. Set frontmatter; H1 = title field.
+<!-- Scaffold: mkdir assets/; copy TEMPLATE.md → usecase.md and template/test.jl
+     (see README “Add a use case”). Set frontmatter; H1 = title field.
      Remove this comment block when status is active (CI enforces).
      Replace every > **Hint:** block with case content; remove hints you do not need.
 

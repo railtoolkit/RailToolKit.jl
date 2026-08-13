@@ -99,6 +99,30 @@ function render_catalogue_table(records::Vector{UseCaseRecord})
     return join(lines, "\n")
 end
 
+const USECASE_ASSET_MEDIA_EXTS = (".png", ".svg", ".jpg", ".jpeg", ".gif", ".webp")
+
+"""
+Copy illustrative media from `usecases/UC-*/assets/` next to generated pages and
+rewrite `](assets/…)` links so Documenter resolves them. GitHub keeps viewing
+the original relative paths in `usecase.md`.
+"""
+function stage_usecase_assets!(src_dir::AbstractString, record::UseCaseRecord)
+    assets_src = joinpath(record.dir, "assets")
+    isdir(assets_src) || return
+    assets_dst = joinpath(src_dir, "generated", "usecases", "assets", record.dir_name)
+    mkpath(assets_dst)
+    for name in readdir(assets_src)
+        ext = lowercase(splitext(name)[2])
+        ext in USECASE_ASSET_MEDIA_EXTS || continue
+        cp(joinpath(assets_src, name), joinpath(assets_dst, name); force=true)
+    end
+    return
+end
+
+function rewrite_asset_links(body::AbstractString, dir_name::AbstractString)
+    return replace(body, r"\]\(assets/" => "](assets/$(dir_name)/")
+end
+
 function write_usecase_pages!(src_dir::AbstractString, records::Vector{UseCaseRecord})
     id_to_path = Dict{String, String}(
         string(get(record.meta, "id", "")) => record.page_path for record in records
@@ -106,8 +130,10 @@ function write_usecase_pages!(src_dir::AbstractString, records::Vector{UseCaseRe
     link_map = Dict(uc_id => basename(path) for (uc_id, path) in id_to_path)
 
     for record in records
+        stage_usecase_assets!(src_dir, record)
         body = strip_html_comments(record.body)
         body = rewrite_body_links(body, link_map)
+        body = rewrite_asset_links(body, record.dir_name)
         header = render_case_header(record, id_to_path)
         write(joinpath(src_dir, record.page_path), join([header, body], "\n"))
     end

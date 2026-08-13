@@ -27,12 +27,13 @@ interactions.
 ## Add a use case
 
 ```sh
-mkdir -p usecases/UC-00N-short-name/assets
-cp usecases/template/TEMPLATE.md usecases/UC-00N-short-name/usecase.md
+mkdir -p usecases/UC-NNN-short-name/assets
+cp usecases/template/TEMPLATE.md usecases/UC-NNN-short-name/usecase.md
+cp usecases/template/test.jl usecases/UC-NNN-short-name/test.jl
 ```
 
 Fill frontmatter and sections. Start with **`status: draft`** when the workflow is
-still implementation-agnostic. Add `assets/` and `test.jl` when binding a concrete
+still implementation-agnostic. Fill `assets/` and `test.jl` when binding a concrete
 implementation. Set **`status: active`** only when CI can prove decidable **Expected
 outcomes** (`OUT-n`).
 

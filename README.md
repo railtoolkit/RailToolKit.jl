@@ -53,8 +53,8 @@ propose (draft)  →  work in parallel  →  bind & prove (active)
 
 **Draft** — land the contract before code exists:
 
-- Copy [`usecases/template/TEMPLATE.md`](usecases/template/TEMPLATE.md) to
-  `usecases/UC-NNN-short-name/usecase.md` with **`status: draft`**
+- Copy the scaffold from [`usecases/template/`](usecases/template/) (`TEMPLATE.md` →
+  `usecase.md`, plus `test.jl`; mkdir `assets/`) with **`status: draft`**
 - Fill Goal, Scope, Main scenario, Artifacts, and **Open questions** (`Q-n`) in
   domain terms — e.g. blocking until a package is chosen or published
 - `packages:` may list candidates or stay TBD
@@ -121,9 +121,9 @@ Each `usecase.md` follows [`usecases/template/TEMPLATE.md`](usecases/template/TE
 
 ID prefixes within a case: `ACT-n`, `PRE-n`, `STEP-n`, `A-n`, `OUT-n`, `EXC-n`, `EX-n`, `TEST-n`, `Q-n`.
 
-Layout: one directory per case — `usecases/UC-<nnn>-<short-name>/` with `usecase.md`,
-`assets/`, and (when active) `test.jl`. Keep cases under **`usecases/`**, not under
-`src/` or `test/`.
+Layout: one directory per case — `usecases/UC-NNN-short-name/` with `usecase.md`,
+`assets/`, and `test.jl` (stub from the template; required to pass CI when active).
+Keep cases under **`usecases/`**, not under `src/` or `test/`.
 
 Rules:
 
@@ -135,9 +135,10 @@ Rules:
 ### Add a use case
 
 ```sh
-mkdir -p usecases/UC-00N-short-name/assets
-cp usecases/template/TEMPLATE.md usecases/UC-00N-short-name/usecase.md
-# edit frontmatter + sections; add assets/ and test.jl when ready for active
+mkdir -p usecases/UC-NNN-short-name/assets
+cp usecases/template/TEMPLATE.md usecases/UC-NNN-short-name/usecase.md
+cp usecases/template/test.jl usecases/UC-NNN-short-name/test.jl
+# edit frontmatter + sections; fill assets/ and test.jl when binding for active
 ```
 
 Then open a PR. Template snapshots: [`usecases/template/versions/v1.md`](usecases/template/versions/v1.md).

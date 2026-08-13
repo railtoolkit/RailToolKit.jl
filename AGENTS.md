@@ -81,7 +81,7 @@ test/
   catalogue.jl            # frontmatter vs latest template/versions/vN.md
   runtests.jl             # catalogue gates + active UC-*/test.jl
 usecases/
-  template/               # TEMPLATE.md, versions/
+  template/               # TEMPLATE.md, test.jl, versions/
   UC-NNN-short-name/
     usecase.md
     assets/
