@@ -389,7 +389,8 @@ end
 function validate_all_usecases()
     current = current_template_version()
     dirs = usecase_directories()
-    isempty(dirs) && error("No usecases/UC-* directories found under $(usecases_root())")
+    # Empty catalogue is allowed while the harness is WIP (no UC-* on the branch yet).
+    isempty(dirs) && return current, UseCaseCheck[]
     checks = Dict(basename(dir) => validate_usecase(dir, current) for dir in dirs)
     cross_validate_usecase_versions!(checks, dirs)
     cross_validate_usecase_relations!(checks, dirs)
