@@ -166,7 +166,7 @@ julia --project=. -e 'include("usecases/UC-001-running-time-minimal/test.jl")'
 
 ## License
 
-[![Open Source Initiative Approved License logo](https://opensource.org/files/OSIApproved_100X125.png "Open Source Initiative Approved License logo")](https://opensource.org)
+[![Open Source Initiative Approved License logo](https://149753425.v2.pressablecdn.com/wp-content/uploads/2009/06/OSIApproved_100X125.png "Open Source Initiative Approved License logo")](https://opensource.org)
 
 Copyright (c) 2026, Martin Scheidt (ISC License)
 
